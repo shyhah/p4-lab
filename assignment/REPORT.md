@@ -15,11 +15,13 @@ The IPv4 TTL does not stop a loop in this program. `ipv4_forward` decrements the
 
 ## 2. Design: the hop limit
 
-<!-- Your header change and your pipeline change, and the reason for each choice:
-     - the field's size, and where in the header you put it (and why there);
-     - the starting value send.py uses, and how you chose it;
-     - where it's decremented, and what happens when it runs out;
-     - what else had to change for every part of the path to agree (parser, deparser, hosts). -->
+Field size and position: I added an 8-bit field called `hop_limit` at the end of the tunnel header after `dst_id`. This is because 8 bits (0 to 255) is the same size as the IPv4 TTL which is enough. I put it at the end to ensure `dst_id` stays in the same place, so an old switch can still read it.
+
+Starting value: `send.py` starts `hop_limit` at 8. My network has only 2 switches, so 8 is more than enough for normal delivery and a loop will still stop quickly.
+
+Decrement and drop: Each switch checks `hop_limit` in the ingress. If it is 0, the switch drops the packet. Otherwise, the switch subtracts 1 and forwards the packet. The switch checks before subtracting, so the value never goes below 0 and goes back to 255.
+
+What else had to change: The tunnel header in `tunnel.p4`, so the parser and deparser read and write the new field. `send.py` adds the field to each packet and `receive.py` reads it and prints the hop limit that arrived.
 
 ## 3. Implementation
 

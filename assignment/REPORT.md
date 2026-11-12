@@ -25,16 +25,19 @@ What else had to change: The tunnel header in `tunnel.p4`, so the parser and dep
 
 ## 3. Implementation
 
-<!-- Summarise what you changed in tunnel.p4, send.py and receive.py. The pull request shows
-     the code itself: here, explain anything a reviewer might not see from the diff alone. -->
+`tunnel.p4`: I added an 8-bit `hop_limit` field at the end of the tunnel header. In the ingress, if a packet has a tunnel header, the switch checks `hop_limit`. If it is 0, the packet is dropped. If not, the switch subtracts 1 and forwards it with `myTunnel_exact`. I did not change the parser or deparser because they follow the header definition, so they can read and write the new byte automatically.
+
+`send.py`: I added the same `hop_limit` field at the end of the tunnel header to match `tunnel.p4`. I also added a `--hops` option to choose the starting value which is 8 by default.
+
+`receive.py`: I added the same field, so it reads the header correctly and it now prints the `hop_limit` that arrived.
 
 ## 4. Evidence: it works
 
-<!-- Show, with your evidence files:
-     - tunnelled delivery to h2 and h3, and the hop limit the receivers saw (delivery.txt);
-     - plain IPv4 still works (delivery.txt);
-     - the same loop as in section 1 now ends, and after how many passes — does that match
-       your design? (loop-after.txt) -->
+Tunnelled delivery (`delivery.txt`): the packet sent to tunnel exit 2 arrived at h2 and the packet sent to tunnel exit 3 arrived at h3. The switches used the tunnel number to choose where to send them, not the IP address. Both left with `hop_limit = 8` and arrived with 6 because s1 and s2 each subtracted 1.
+
+Plain IPv4 (`delivery.txt`): `h1 ping -c 2 h3` still worked (0% loss, TTL 62).
+
+The loop now ends (`loop-after.txt`): with the same loop as in section 1, the packet counts did not change after 5 seconds, so the loop stopped. For a second loop packet, s1's count went up by 5 and s2's by 4, so 9 arrivals in total. The packet was forwarded 8 times (`hop_limit` 8 down to 0) and dropped on the 9th arrival which matches my design. The large totals include packets from earlier runs because the logs are not cleared on restart.
 
 ## 5. Evaluation
 

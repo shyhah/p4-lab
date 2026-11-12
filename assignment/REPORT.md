@@ -1,16 +1,17 @@
 # Week 5 assignment — Put a limit on the tunnel
 
-Student ID (last 4 digits only): **NNNN**
+Student ID (last 4 digits only): **1940**
 
 Write each section in your own words, about your own runs. Quote the evidence files in
 `assignment/evidence/` that support each point. Delete the instructions in `<!-- -->` as you go.
 
 ## 1. Analysis: the loop
 
-<!-- How did you create the tunnel loop (which entry, on which switch, which commands)?
-     What did the switch logs show over time, with numbers from loop-before.txt?
-     Then look at the IPv4 path in tunnel.p4: it decrements the TTL. Does that stop an IPv4
-     loop in this program? Check the code, and explain what happens when TTL reaches 0. -->
+I created the tunnel loop on s2 by changing its tunnel table entry for exit 3 (key 0003, handle 2) from port 3 to port 1, so it sends the packet back to s1 : `sh ./p4cli s2 "table_modify MyIngress.myTunnel_exact MyIngress.myTunnel_forward 2 1"`. 
+
+s1 already sends exit 3 to s2, so one packet kept going back and forth between them. In `loop-before.txt`, s1 and s2 had handled 1264 and 1266 packets and 5 seconds later 1481 and 1480. The numbers kept rising from one packet, so the loop never stopped.
+
+The IPv4 TTL does not stop a loop in this program. `ipv4_forward` decrements the TTL, but nothing checks it or drops the packet when it reaches 0. The TTL is an 8-bit number (0 to 255), so 0 − 1 becomes 255 and the packet keeps looping. 
 
 ## 2. Design: the hop limit
 

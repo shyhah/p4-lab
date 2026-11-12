@@ -41,9 +41,8 @@ The loop now ends (`loop-after.txt`): with the same loop as in section 1, the pa
 
 ## 5. Evaluation
 
-<!-- a) The mixed rollout (mixed.txt): what did you predict before running s1 with your new
-        program and s2 with tunnel_v1.p4? What actually happened to delivery, and to the loop?
-        Explain every difference from your prediction, byte by byte if you need to.
+a) Prediction : s2 runs the old program. It reads `proto_id` and `dst_id` correctly but it doesn't know about `hop_limit`, so it never changes it. I think a packet sent to exit 2 will still reach h2. The loop will still end because s1 subtracts 1 each time but it will take about twice as many passes because s2 doesn't subtract.
+
      b) Propose a safe way to roll out a header change across a network of switches that can't
         all be upgraded at once. Compare at least two options (for example a version field, a
         new EtherType, or ordering fields so old switches still parse them).

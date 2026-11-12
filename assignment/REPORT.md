@@ -46,12 +46,21 @@ a) Prediction before run : s2 runs the old program. It reads `proto_id` and `dst
 Result : The loop ran as I predicted, with 9 arrivals at s1 and 8 at s2, a total of 17 arrivals (`mixed.txt`). It still ended because s1 subtracted 1 each time but it took about twice as many passes as before (17 instead of 9), since s2 did not subtract. 
 Delivery did not match my prediction. tcpdump shows the packet reached h2 but `receive.py` printed nothing. This is because the old s2 reads only 4 tunnel bytes, so it thinks IPv4 starts one byte early at the `hop_limit` byte. Its checksum update then wrote into the wrong place and changed the real IPv4 protocol byte from 0x11 (UDP) to 0x0d. So h2 no longer saw a UDP packet and ignored it.
 
-     b) Propose a safe way to roll out a header change across a network of switches that can't
-        all be upgraded at once. Compare at least two options (for example a version field, a
-        new EtherType, or ordering fields so old switches still parse them).
-     c) Loop protection in the data plane (this hop limit) versus the control plane (Week 3's
-        check_paths()): what can each catch that the other can't? Why do real networks use both?
-     d) What would this change cost on a hardware switch running at line rate? -->
+b) A safe way to roll out:
+
+1. A new EtherType: the new header uses a different EtherType. Old switches don't recognise it and simply drop it, so they never misread it like s2 did. Hosts can keep sending the old header until every switch on the path is upgraded. The cost is that new packets cannot cross any old switch.
+
+2. The order of fields: putting `hop_limit` at the end let the old s2 read `dst_id` correctly but `mixed.txt` shows this was not safe because s2 still misread IPv4 and corrupted the packet.
+
+I would choose a new EtherType. I would upgrade all switches so they handle both the old and the new type, then switch the hosts to the new header. This way, old switches never see a header they would misread.
+
+c) The hop limit (data plane) checks every real packet. It can stop any loop even one caused by a mistake made while the network is running but it only acts after the packet is already looping.
+
+`check_paths()` (control plane, Week 3) checks the routes before they are installed, so a loop is found before any packet is sent. But it only checks the routes it is given. It cannot see a change made directly on a switch.
+
+Real networks use both because `check_paths()` stops most mistakes before they happen and the hop limit is a safety net for the ones it misses.
+
+d) Each tunnelled packet is 1 byte bigger, so a little less bandwidth is left for data. Each switch also has to read one more byte, check if `hop_limit` is 0 and subtract 1. A hardware switch can still do these steps at full speed but they use a small part of its limited pipeline resources. The bigger cost is that every switch must be recompiled and reloaded to understand the new header.
 
 ## AI use
 

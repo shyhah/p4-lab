@@ -64,10 +64,7 @@ d) Each tunnelled packet is 1 byte bigger, so a little less bandwidth is left fo
 
 ## AI use
 
-<!-- This assignment is Level 3 (Open): AI use is allowed if you declare it. State which tools you
-     used (or "None") and what each did — for example "ChatGPT explained the bmv2 log format;
-     the first draft of the hop-limit check came from Copilot, which I then changed and tested".
-     Be ready to explain any part of your work yourself. -->
+I used ChatGPT to check each step before proceeding to the next. It suggested code changes for C3, which I implemented, debugged, and tested. It also helped me understand the evidence including the mixed-rollout results and troubleshoot any issues I encountered.
 
 ## Evidence files
 

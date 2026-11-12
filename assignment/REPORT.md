@@ -41,7 +41,10 @@ The loop now ends (`loop-after.txt`): with the same loop as in section 1, the pa
 
 ## 5. Evaluation
 
-a) Prediction : s2 runs the old program. It reads `proto_id` and `dst_id` correctly but it doesn't know about `hop_limit`, so it never changes it. I think a packet sent to exit 2 will still reach h2. The loop will still end because s1 subtracts 1 each time but it will take about twice as many passes because s2 doesn't subtract.
+a) Prediction before run : s2 runs the old program. It reads `proto_id` and `dst_id` correctly but it doesn't know about `hop_limit`, so it never changes it. I think a packet sent to exit 2 will still reach h2. The loop will still end because s1 subtracts 1 each time but it will take about twice as many passes because s2 doesn't subtract.
+
+Result : The loop ran as I predicted, with 9 arrivals at s1 and 8 at s2, a total of 17 arrivals (`mixed.txt`). It still ended because s1 subtracted 1 each time but it took about twice as many passes as before (17 instead of 9), since s2 did not subtract. 
+Delivery did not match my prediction. tcpdump shows the packet reached h2 but `receive.py` printed nothing. This is because the old s2 reads only 4 tunnel bytes, so it thinks IPv4 starts one byte early at the `hop_limit` byte. Its checksum update then wrote into the wrong place and changed the real IPv4 protocol byte from 0x11 (UDP) to 0x0d. So h2 no longer saw a UDP packet and ignored it.
 
      b) Propose a safe way to roll out a header change across a network of switches that can't
         all be upgraded at once. Compare at least two options (for example a version field, a
